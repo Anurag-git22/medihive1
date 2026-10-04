@@ -15,7 +15,12 @@ import {
   Phone,
   Menu,
   X,
+  Tv,
 } from "lucide-react";
+import { useCalledPatientAlert } from "../../hooks/useCalledPatientAlert";
+import { CalledPatientBanner } from "../common/CalledPatientBanner";
+import { ChimeSoundControl } from "../common/ChimeSoundControl";
+import { WaitingAreaScreen } from "./WaitingAreaScreen";
 import { MediHiveLogo } from "../common/MediHiveLogo";
 import {
   AppState,
@@ -99,6 +104,12 @@ export const ReceptionistLayout: React.FC<ReceptionistLayoutProps> = ({
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [initialSearchQuery, setInitialSearchQuery] = useState<string>("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showWaitingArea, setShowWaitingArea] = useState(false);
+
+  // Real-time Patient Called Hospital Chime & Banner alert hook
+  const { alerts, dismissAlert, isMuted } = useCalledPatientAlert({
+    userRole: "receptionist",
+  });
 
   // Sync tab to URL hash and sessionStorage
   useEffect(() => {
@@ -420,8 +431,26 @@ export const ReceptionistLayout: React.FC<ReceptionistLayoutProps> = ({
     },
   ];
 
+  if (showWaitingArea) {
+    return (
+      <WaitingAreaScreen
+        queue={appState.queue}
+        clinic={appState.clinic}
+        doctor={appState.doctor}
+        onBack={() => setShowWaitingArea(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-dvh min-h-dvh bg-[#f4f7f9] overflow-hidden">
+      {/* Real-time Patient Called Hospital Chime Alert Banner */}
+      <CalledPatientBanner
+        alerts={alerts}
+        onDismiss={dismissAlert}
+        isMuted={isMuted}
+      />
+
       {/* Skip to main content link for keyboard / screen reader users */}
       <a href="#receptionist-main-content" className="skip-to-main">
         Skip to main content
@@ -623,8 +652,22 @@ export const ReceptionistLayout: React.FC<ReceptionistLayoutProps> = ({
               </span>
             </div>
 
+            {/* Chime Sound Bell Audio & Mute/Volume Settings */}
+            <ChimeSoundControl />
+
+            {/* Waiting Area Display Screen (TV Mode) */}
+            <button
+              type="button"
+              onClick={() => setShowWaitingArea(true)}
+              title="Open Fullscreen Waiting Area Display (TV Mode)"
+              className="hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer shrink-0"
+            >
+              <Tv className="w-3.5 h-3.5 text-slate-600" />
+              <span>Waiting Display</span>
+            </button>
+
             {/* Current Time Display */}
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span>
                 {new Date().toLocaleDateString("en-US", {

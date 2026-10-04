@@ -195,3 +195,13 @@ textarea:focus-visible,
   outline: 2px solid #38bdf8;
   outline-offset: 2px;
 }
+
+@keyframes medihive-progress-shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+

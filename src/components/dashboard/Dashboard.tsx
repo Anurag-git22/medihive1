@@ -46,6 +46,7 @@ interface DashboardProps {
   onNavigateToCalendar: (date?: string) => void;
   onNavigateToPatients: () => void;
   onCallPatientIntoCabin?: (queueId?: string) => void;
+  onCompleteAndCallNext?: (currentQueueId: string, nextQueueId: string) => void;
   onOpenConsultation?: (queueItem: QueueItem) => void;
   onNavigateToQueue?: () => void;
 }
@@ -60,6 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateToCalendar,
   onNavigateToPatients,
   onCallPatientIntoCabin,
+  onCompleteAndCallNext,
   onOpenConsultation,
   onNavigateToQueue,
 }) => {
@@ -405,14 +407,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>Open Consultation</span>
                 </button>
 
+                {nextInLine && onCompleteAndCallNext && (
+                  <button
+                    onClick={() =>
+                      onCompleteAndCallNext(currentWithDoctor.id, nextInLine.id)
+                    }
+                    title={`Complete consultation for ${currentWithDoctor.patientName} and immediately call ${nextInLine.patientName} (${nextInLine.queueNumber})`}
+                    className="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-[#194358] hover:from-teal-700 hover:to-[#205570] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer border border-teal-400/40 active:scale-95"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    <span>Complete & Call Next ({nextInLine.queueNumber})</span>
+                  </button>
+                )}
+
                 {nextInLine && onCallPatientIntoCabin && (
                   <button
                     onClick={() => onCallPatientIntoCabin(nextInLine.id)}
-                    title={`Take Next Patient: ${nextInLine.patientName} (${nextInLine.queueNumber}) into Cabin`}
+                    title={`Call ${nextInLine.patientName} (${nextInLine.queueNumber}) into Cabin`}
                     className="px-4 py-2.5 bg-[#194358] hover:bg-[#205570] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer border border-sky-400/30"
                   >
                     <UserCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Take Next: {nextInLine.queueNumber}</span>
+                    <span>Call Patient ({nextInLine.queueNumber})</span>
                   </button>
                 )}
               </div>
@@ -492,7 +507,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <UserCheck className="w-5 h-5 text-emerald-400" />
                   <span>
-                    Take Next Patient into Cabin ({nextInLine.queueNumber})
+                    Call Patient ({nextInLine.queueNumber} — {nextInLine.patientName})
                   </span>
                 </button>
               </div>

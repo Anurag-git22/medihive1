@@ -23,6 +23,7 @@ import {
   saveOpdRecordInSupabase,
   fetchUserAccountsFromSupabase,
 } from "./supabaseService";
+import { broadcastPatientCalled } from "./queueAlertService";
 
 export const getLocalDateString = (d: Date = new Date()): string =>
   format(d, "yyyy-MM-dd");
@@ -551,6 +552,12 @@ export const callPatientIntoCabin = (
     type: "PATIENT_CALLED",
     payload: { activePatient: updatedItem },
   });
+  broadcastPatientCalled({
+    token: updatedItem.queueNumber,
+    patientName: updatedItem.patientName,
+    calledAt: nowIso,
+    queueId: updatedItem.id,
+  });
 
   // Persist to Supabase in background
   updateQueueItemStatusInSupabase(updatedItem.id, "With Doctor", {
@@ -650,6 +657,75 @@ export const completeConsultationAndAdvanceQueue = (
   }
 
   return { updatedState, nextPatient };
+};
+
+// Doctor marks current patient Completed and immediately calls next waiting patient
+export const completeCurrentAndCallNextPatient = (
+  appState: AppState,
+  currentQueueId: string,
+  nextQueueId: string,
+): { updatedState: AppState; calledPatient: QueueItem | null } => {
+  const nowIso = new Date().toISOString();
+  const queue = [...(appState.queue || [])];
+
+  // 1. Mark current patient Completed
+  const curIdx = queue.findIndex((q) => q.id === currentQueueId);
+  if (curIdx !== -1) {
+    queue[curIdx] = {
+      ...queue[curIdx],
+      status: "Completed",
+      completedAt: nowIso,
+    };
+    updateQueueItemStatusInSupabase(currentQueueId, "Completed", {
+      completedAt: nowIso,
+    }).catch(() => {});
+  }
+
+  // 2. Call next patient into Cabin
+  const nextIdx = queue.findIndex((q) => q.id === nextQueueId);
+  let calledPatient: QueueItem | null = null;
+  if (nextIdx !== -1) {
+    calledPatient = {
+      ...queue[nextIdx],
+      status: "With Doctor",
+      calledAt: nowIso,
+    };
+    queue[nextIdx] = calledPatient;
+
+    updateQueueItemStatusInSupabase(nextQueueId, "With Doctor", {
+      calledAt: nowIso,
+    }).catch(() => {});
+  }
+
+  // Update corresponding visit records
+  const updatedVisits = (appState.visits || []).map((v) => {
+    if (v.queueId === currentQueueId) return { ...v, status: "Completed" as QueueStatus };
+    if (v.queueId === nextQueueId) return { ...v, status: "With Doctor" as QueueStatus };
+    return v;
+  });
+
+  const updatedState: AppState = {
+    ...appState,
+    queue,
+    visits: updatedVisits,
+  };
+
+  saveAppState(updatedState);
+
+  if (calledPatient) {
+    broadcastPatientCalled({
+      token: calledPatient.queueNumber,
+      patientName: calledPatient.patientName,
+      calledAt: nowIso,
+      queueId: calledPatient.id,
+    });
+    broadcastQueueEvent({
+      type: "PATIENT_CALLED",
+      payload: { activePatient: calledPatient },
+    });
+  }
+
+  return { updatedState, calledPatient };
 };
 
 // Cancel a queue item (patient leaves before consultation)

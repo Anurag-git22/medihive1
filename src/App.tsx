@@ -17,6 +17,7 @@ import {
   subscribeQueueEvents,
   callPatientIntoCabin,
   completeConsultationAndAdvanceQueue,
+  completeCurrentAndCallNextPatient,
   cancelPatientQueueItem,
   syncAccountsFromSupabase,
 } from "./services/storage";
@@ -1091,6 +1092,24 @@ const MainAppContent: React.FC = () => {
     }
   };
 
+  const handleDoctorCompleteAndCallNext = (
+    currentQueueId: string,
+    nextQueueId: string,
+  ) => {
+    const { updatedState, calledPatient } = completeCurrentAndCallNextPatient(
+      appState,
+      currentQueueId,
+      nextQueueId,
+    );
+    setAppState(updatedState);
+    if (calledPatient) {
+      showToast(
+        `Completed current consultation & calling ${calledPatient.patientName} (${calledPatient.queueNumber})`,
+        "info",
+      );
+    }
+  };
+
   const handleCompleteConsultation = (
     opdRecord: OPDRecord,
     autoCallNext: boolean,
@@ -1236,6 +1255,7 @@ const MainAppContent: React.FC = () => {
               onNavigateToCalendar={() => setCurrentTab("calendar")}
               onNavigateToPatients={() => setCurrentTab("patients")}
               onCallPatientIntoCabin={handleDoctorCallPatient}
+              onCompleteAndCallNext={handleDoctorCompleteAndCallNext}
               onOpenConsultation={(item) =>
                 setActiveConsultationQueueItem(item)
               }

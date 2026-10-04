@@ -65,11 +65,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {nextPatientInQueue && onCallNextPatient && (
           <button
             onClick={() => onCallNextPatient(nextPatientInQueue.id)}
-            title={`Take Next Patient: ${nextPatientInQueue.patientName} (${nextPatientInQueue.queueNumber}) into Cabin`}
+            title={`Call Patient: ${nextPatientInQueue.patientName} (${nextPatientInQueue.queueNumber}) into Cabin`}
             className="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition border border-emerald-300 cursor-pointer animate-pulse hover:animate-none"
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Call Next:</span>
+            <span className="hidden md:inline">Call Patient:</span>
             <span className="bg-white/25 px-1.5 py-0.5 rounded text-[11px] font-mono tracking-tight">
               {nextPatientInQueue.queueNumber}
             </span>
